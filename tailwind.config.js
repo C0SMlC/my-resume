@@ -10,6 +10,11 @@ module.exports = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        primary: "#F2AB38",
+        primary_black: "#1e0a01",
+      },
+      fontFamily: {
+        retro: ["var(--font-retro)"],
       },
     },
   },

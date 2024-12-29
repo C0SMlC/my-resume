@@ -1,15 +1,12 @@
+// app/layout.js
 import localFont from "next/font/local";
 import "./globals.css";
+import VintageCursor from "@/components/Global/VintageMouse";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+// Define the retro font
+const retro = localFont({
+  src: "./fonts/Retro.ttf",
+  variable: "--font-retro",
 });
 
 export const metadata = {
@@ -20,10 +17,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      {/* Remove the style tag since we're using local font */}
+      <body className={`${retro.variable} antialiased`}>
         {children}
+        <VintageCursor />
       </body>
     </html>
   );
