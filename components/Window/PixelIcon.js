@@ -8,9 +8,7 @@ export const PixelIcon = ({ name, icon, onClick }) => {
       <div className="flex items-center justify-center">
         <img src={`/icons/${icon}.png`} alt={name} className="w-16 h-16" />
       </div>
-      <span className="text-primary_black text-md font-['Press_Start_2P']">
-        {name}
-      </span>
+      <span className="text-primary_black text-xl font-retro ">{name}</span>
     </button>
   );
 };

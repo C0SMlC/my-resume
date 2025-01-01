@@ -1,15 +1,32 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import WelcomeScreen from "@/pages/Login/WelcomeScreen";
 import { Window } from "@/components/Window/Window";
 import { PixelIcon } from "@/components/Window/PixelIcon";
 import { StatusBar } from "@/components/Window/StatusBar";
+import Sidebar from "@/components/Sidebar";
+import TutorialOverlay from "@/components/Global/Tutorial";
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeProgram, setActiveProgram] = useState(null);
   const [programs, setPrograms] = useState([]);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    // Check if it's the first visit
+    const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
+    // if (!hasSeenTutorial && isLoggedIn) {
+    //   setShowTutorial(true);
+    // }
+  }, [isLoggedIn]);
+
+  const completeTutorial = () => {
+    setShowTutorial(false);
+    localStorage.setItem("hasSeenTutorial", "true");
+  };
 
   const handleDockClick = (id) => {
     if (activeProgram === id) return;
@@ -49,23 +66,28 @@ export default function Home() {
             backgroundRepeat: "no-repeat",
           }}
         >
-          <StatusBar />
+          {showTutorial && <TutorialOverlay onComplete={completeTutorial} />}
+          {isHovered ? <Sidebar /> : <div></div>}
+          <StatusBar
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          />
           <div className="grid grid-cols-8 gap-4 p-4 mt-14">
-            <PixelIcon
+            {/* <PixelIcon
               name="Home"
               icon="home"
               onClick={() => toggleProgram("files")}
-            />
+            /> */}
             <PixelIcon
               name="Terminal"
               icon="terminal"
               onClick={() => toggleProgram("terminal")}
             />
-            <PixelIcon
+            {/* <PixelIcon
               name="Achievement"
               icon="trophy"
               onClick={() => toggleProgram("achievement")}
-            />
+            /> */}
           </div>
           {programs.map((program) => (
             <Window
@@ -84,7 +106,7 @@ export default function Home() {
           <div className="fixed bottom-0 left-0 right-0 h-12 bg-gray-800 flex items-center px-4">
             <button
               onClick={() => setIsLoggedIn(false)}
-              className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 font-['Press_Start_2P'] text-xs"
+              className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 font-retro text-xs"
             >
               Logout
             </button>
@@ -94,7 +116,7 @@ export default function Home() {
                   key={program.id}
                   className={`px-4 py-1 ${
                     activeProgram === program.id ? "bg-blue-500" : "bg-gray-700"
-                  } text-white rounded font-['Press_Start_2P'] text-xs`}
+                  } text-white rounded font-retro text-xs`}
                   onClick={() => handleDockClick(program.id)}
                 >
                   {program.type}

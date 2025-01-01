@@ -7,8 +7,8 @@ export default function VintageCursor() {
   useEffect(() => {
     const updatePosition = (e) => {
       // Round to nearest pixel for pixelated movement
-      const x = Math.round(e.clientX / 8) * 8;
-      const y = Math.round(e.clientY / 8) * 8;
+      const x = e.clientX;
+      const y = e.clientY;
       setPosition({ x, y });
     };
 

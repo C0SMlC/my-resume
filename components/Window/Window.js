@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Minus, Square, X } from "lucide-react";
+import Terminal from "../Apps/Terminal";
 
 export const Window = ({
   program,
@@ -131,7 +132,7 @@ export const Window = ({
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-gray-800 rounded shadow-lg ${
+      className={`absolute bg-gray-800 rounded shadow-lg${
         isActive ? "z-10" : "z-0"
       } ${isDragging ? "cursor-grabbing" : ""} ${
         position === null ? "center-window" : ""
@@ -180,9 +181,9 @@ export const Window = ({
 
       {/* Window Content */}
       <div
-        className="p-4 text-white overflow-auto"
+        className="p-4 text-white overflow-auto h-full"
         style={{
-          maxHeight: isMaximized ? "calc(100vh - 40px)" : "calc(100vh - 200px)",
+          height: isMaximized ? "calc(100vh - 64px)" : "calc(50vh - 32px)",
         }}
       >
         {program.type === "terminal" && <Terminal />}
@@ -192,10 +193,6 @@ export const Window = ({
     </div>
   );
 };
-
-function Terminal() {
-  return <div className="font-mono">C:\&gt;</div>;
-}
 
 function FileExplorer() {
   return <div>My Files</div>;
