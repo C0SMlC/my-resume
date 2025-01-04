@@ -16,17 +16,32 @@ export const Window = ({
   const [isMaximized, setIsMaximized] = useState(false);
   const [previousDimensions, setPreviousDimensions] = useState(null);
   const [position, setPosition] = useState(null);
+  const [windowState, setWindowState] = useState({
+    content: null,
+    dimensions: null,
+    maximized: false,
+  });
   const windowRef = useRef(null);
 
+  // Store window state before minimizing
   useEffect(() => {
-    if (position === null && windowRef.current) {
-      const rect = windowRef.current.getBoundingClientRect();
-      setPosition({
-        x: rect.left,
-        y: rect.top,
+    if (isMinimized) {
+      setWindowState({
+        content: windowRef.current?.querySelector(".flex-1")?.innerHTML,
+        dimensions: {
+          position: position,
+          previousDimensions: previousDimensions,
+          isMaximized: isMaximized,
+        },
+        maximized: isMaximized,
       });
+    } else if (windowState.dimensions) {
+      // Restore state when unminimizing
+      setPosition(windowState.dimensions.position);
+      setPreviousDimensions(windowState.dimensions.previousDimensions);
+      setIsMaximized(windowState.maximized);
     }
-  }, []);
+  }, [isMinimized]);
 
   useEffect(() => {
     if (position === null && windowRef.current) {
@@ -50,6 +65,7 @@ export const Window = ({
       windowRef.current.classList.remove("center-window");
     }
   };
+
   const handleMouseMove = (e) => {
     if (isDragging) {
       setPosition({
@@ -117,30 +133,29 @@ export const Window = ({
   if (isMinimized) {
     return (
       <div
-        className="fixed bottom-0 left-0 bg-gray-800 text-white p-2 rounded-t cursor-pointer"
-        onClick={() => setIsMinimized(false)}
+        className="fixed bottom-0 left-0 bg-gray-800 text-white p-2 rounded-t cursor-pointer mt-12"
+        onClick={() => {
+          setIsMinimized(false);
+          setActiveProgram(program.id);
+        }}
       >
         {program.type}
       </div>
     );
   }
 
-  if (isMinimized) {
-    return null;
-  }
-
   return (
     <div
       ref={windowRef}
-      className={`absolute bg-gray-800 rounded shadow-lg${
+      className={`absolute bg-gray-800 rounded shadow-lg flex flex-col ${
         isActive ? "z-10" : "z-0"
       } ${isDragging ? "cursor-grabbing" : ""} ${
         position === null ? "center-window" : ""
-      }`}
+      } ${isMaximized ? "mt-8" : ""}`}
       style={{
         userSelect: "none",
         width: isMaximized ? "100%" : "50%",
-        height: isMaximized ? "calc(100% - 32px)" : "50%",
+        height: isMaximized ? "calc(100% - 72px)" : "50%",
         left: isMaximized ? 0 : position?.x ?? "50%",
         top: isMaximized ? "32px" : position?.y ?? "50%",
         transform: position === null ? "translate(-50%, -50%)" : "none",
@@ -149,7 +164,7 @@ export const Window = ({
       onClick={onClick}
     >
       <div
-        className="title-bar flex items-center justify-between bg-gray-700 p-2 rounded-t cursor-grab active:cursor-grabbing"
+        className="title-bar flex items-center justify-between bg-gray-700 p-2 rounded-t cursor-grab active:cursor-grabbing flex-shrink-0"
         onMouseDown={handleMouseDown}
         onDoubleClick={handleDoubleClick}
       >
@@ -179,14 +194,10 @@ export const Window = ({
         </div>
       </div>
 
-      {/* Window Content */}
-      <div
-        className="p-4 text-white overflow-auto h-full"
-        style={{
-          height: isMaximized ? "calc(100vh - 64px)" : "calc(50vh - 32px)",
-        }}
-      >
-        {program.type === "terminal" && <Terminal />}
+      <div className="flex-1 min-h-0">
+        {program.type === "terminal" && (
+          <Terminal key={`terminal-${program.id}`} />
+        )}
         {program.type === "files" && <FileExplorer />}
         {program.type === "settings" && <Settings />}
       </div>

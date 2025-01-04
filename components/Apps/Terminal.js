@@ -3,16 +3,45 @@ import { useEffect, useRef, useState } from "react";
 const Terminal = () => {
   const [input, setInput] = useState("");
   const [history, setHistory] = useState([
-    'Welcome to the Portfolio Terminal! Type "help" for available commands.',
+    {
+      type: "system",
+      content: 'Welcome to the Terminal! Type "help" for available commands.',
+    },
   ]);
   const terminalRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (terminalRef.current) {
-      const terminal = terminalRef.current;
-      terminal.scrollTop = terminal.scrollHeight;
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
   }, [history]);
+
+  const handleTerminalClick = () => {
+    inputRef.current?.focus();
+  };
+
+  const parseLinks = (text) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
 
   const commands = {
     help: {
@@ -28,6 +57,9 @@ const Terminal = () => {
           "  certs       - Show certifications",
           "  links       - Show portfolio links",
           "  about       - About this system",
+          "  banner      - Display ASCII art banner",
+          "  time        - Show current time",
+          "  echo [text] - Echo back your text",
         ].join("\n");
       },
     },
@@ -35,8 +67,32 @@ const Terminal = () => {
       description: "Clear terminal",
       action: () => {
         setHistory([]);
-        return "";
+        return null;
       },
+    },
+    banner: {
+      description: "Display ASCII art banner",
+      action: () => {
+        return `
+██████╗ ██████╗  █████╗ ████████╗██╗██╗  ██╗
+██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██║██║ ██╔╝
+██████╔╝██████╔╝███████║   ██║   ██║█████╔╝ 
+██╔═══╝ ██╔══██╗██╔══██║   ██║   ██║██╔═██╗ 
+██║     ██║  ██║██║  ██║   ██║   ██║██║  ██╗
+╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝╚═╝  ╚═╝
+`;
+      },
+    },
+    time: {
+      description: "Show current time",
+      action: () => {
+        return new Date().toLocaleString();
+      },
+    },
+    echo: {
+      description: "Echo back your text",
+      action: (args) =>
+        args.join(" ") || "You didn't provide any text to echo!",
     },
     skills: {
       description: "List technical skills",
@@ -74,8 +130,6 @@ const Terminal = () => {
       description: "Show work experience",
       action: () => {
         return [
-          "Work Experience:",
-          "",
           "1. Inovact - Backend Developer",
           "   Mumbai, Maharashtra (08/2023 - 05/2024)",
           "   • Built efficient server-side solutions using Node.js and Express",
@@ -104,11 +158,9 @@ const Terminal = () => {
       description: "Show education details",
       action: () => {
         return [
-          "Education:",
-          "",
           "• Bachelor of Technology",
           "  Electronics And Computer Science",
-          "  College of Engineering",
+          "  Pillai College of Engineering, New Panvel",
           "  Graduation: 05/2024",
           "",
           "• Higher Secondary",
@@ -159,37 +211,82 @@ const Terminal = () => {
       const cmd = args[0].toLowerCase();
       const cmdArgs = args.slice(1);
 
-      let output;
+      // Add command to history
+      setHistory((prev) => [...prev, { type: "command", content: input }]);
+
+      // Process command
       if (commands[cmd]) {
-        output = commands[cmd].action(cmdArgs);
+        const output = commands[cmd].action(cmdArgs);
+        if (output !== null) {
+          // Only add output if not null (for clear command)
+          setHistory((prev) => [...prev, { type: "output", content: output }]);
+        }
       } else {
-        output = `Command not found: ${cmd}. Type "help" for available commands.`;
+        setHistory((prev) => [
+          ...prev,
+          {
+            type: "error",
+            content: `Command not found: ${cmd}. Type "help" for available commands.`,
+          },
+        ]);
       }
 
-      if (input !== "clear") {
-        setHistory((prev) => [...prev, `> ${input}`, output]);
-      }
       setInput("");
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      // Get last command from history
+      const lastCommand = [...history]
+        .reverse()
+        .find((item) => item.type === "command");
+      if (lastCommand) {
+        setInput(lastCommand.content);
+      }
     }
   };
 
+  const getLineStyle = (type) => {
+    switch (type) {
+      case "command":
+        return "text-green-400 font-bold";
+      case "error":
+        return "text-red-400";
+      case "system":
+        return "text-yellow-400";
+      default:
+        return "text-gray-200";
+    }
+  };
   return (
-    <div className="font-mono text-sm h-full flex flex-col">
-      <div className="flex-1 overflow-auto" ref={terminalRef}>
-        {history.map((line, i) => (
-          <div key={i} className="whitespace-pre-wrap mt-2">
-            {line}
+    <div
+      className="h-full flex flex-col font-mono text-sm bg-gray-900 text-white"
+      onClick={handleTerminalClick}
+    >
+      {/* Output Area */}
+      <div
+        className="flex-1 overflow-y-auto min-h-0 p-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+        ref={terminalRef}
+      >
+        {history.map((item, i) => (
+          <div
+            key={i}
+            className={`whitespace-pre-wrap mb-2 ${getLineStyle(item.type)}`}
+          >
+            {item.type === "command" ? "> " : ""}
+            {parseLinks(item.content)}
           </div>
         ))}
       </div>
-      <div className="flex mt-auto">
-        <span className="mr-2">{">"}</span>
+
+      {/* Input Area - Fixed at bottom */}
+      <div className="flex items-center p-4 border-t border-gray-700 bg-gray-900">
+        <span className="text-green-400 mr-2">{">"}</span>
         <input
+          ref={inputRef}
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleCommand}
-          className="bg-transparent focus:outline-none flex-1 terminal-input"
+          className="bg-transparent focus:outline-none flex-1 text-white"
           autoFocus
         />
       </div>

@@ -11,16 +11,12 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeProgram, setActiveProgram] = useState(null);
   const [programs, setPrograms] = useState([]);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
+  const [minimizedPrograms, setMinimizedPrograms] = useState(new Set());
+  const [isToggleClicked, setIsToggleClicked] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
-    // Check if it's the first visit
     const hasSeenTutorial = localStorage.getItem("hasSeenTutorial");
-    // if (!hasSeenTutorial && isLoggedIn) {
-    //   setShowTutorial(true);
-    // }
   }, [isLoggedIn]);
 
   const completeTutorial = () => {
@@ -28,24 +24,51 @@ export default function Home() {
     localStorage.setItem("hasSeenTutorial", "true");
   };
 
+  const onToggleClicked = () => {
+    setIsToggleClicked(true);
+  };
+
   const handleDockClick = (id) => {
-    if (activeProgram === id) return;
-    setIsMinimized(false);
-    setActiveProgram(id);
+    if (minimizedPrograms.has(id)) {
+      // If program is minimized, restore it
+      setMinimizedPrograms((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+      setActiveProgram(id);
+    } else if (activeProgram === id) {
+      // If program is active, minimize it
+      setMinimizedPrograms((prev) => new Set(prev).add(id));
+      setActiveProgram(null);
+    } else {
+      // If program is neither minimized nor active, make it active
+      setActiveProgram(id);
+    }
+  };
+
+  const handleMinimize = (programId) => {
+    setMinimizedPrograms((prev) => new Set(prev).add(programId));
+    setActiveProgram(null);
   };
 
   const toggleProgram = (type) => {
     const existingProgram = programs.find((p) => p.type === type);
     if (existingProgram) {
-      if (activeProgram === existingProgram.id) {
-        // If already active, minimize
-        setActiveProgram(null);
+      if (minimizedPrograms.has(existingProgram.id)) {
+        setMinimizedPrograms((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(existingProgram.id);
+          return newSet;
+        });
+        setActiveProgram(existingProgram.id);
+      } else if (activeProgram === existingProgram.id) {
+        handleMinimize(existingProgram.id);
       } else {
-        // If not active, activate
         setActiveProgram(existingProgram.id);
       }
     } else {
-      // If doesn't exist, create new
+      // Create new program
       const newProgram = { id: Date.now(), type };
       setPrograms((prev) => [...prev, newProgram]);
       setActiveProgram(newProgram.id);
@@ -59,6 +82,9 @@ export default function Home() {
       ) : (
         <div
           className="min-h-screen relative overflow-hidden"
+          onClick={() => {
+            if (isToggleClicked) setIsToggleClicked(false);
+          }}
           style={{
             backgroundImage: 'url("/Background/Wallpaper.png")',
             backgroundSize: "cover",
@@ -67,42 +93,51 @@ export default function Home() {
           }}
         >
           {showTutorial && <TutorialOverlay onComplete={completeTutorial} />}
-          {isHovered ? <Sidebar /> : <div></div>}
-          <StatusBar
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-          />
+          {isToggleClicked ? <Sidebar /> : <div></div>}
+          <StatusBar onToggleClicked={onToggleClicked} />
+
           <div className="grid grid-cols-8 gap-4 p-4 mt-14">
-            {/* <PixelIcon
-              name="Home"
-              icon="home"
-              onClick={() => toggleProgram("files")}
-            /> */}
             <PixelIcon
               name="Terminal"
               icon="terminal"
               onClick={() => toggleProgram("terminal")}
             />
-            {/* <PixelIcon
-              name="Achievement"
-              icon="trophy"
-              onClick={() => toggleProgram("achievement")}
-            /> */}
           </div>
+
           {programs.map((program) => (
             <Window
               key={program.id}
               program={program}
-              onClose={() =>
-                setPrograms((prev) => prev.filter((p) => p.id !== program.id))
-              }
+              onClose={() => {
+                setPrograms((prev) => prev.filter((p) => p.id !== program.id));
+                setMinimizedPrograms((prev) => {
+                  const newSet = new Set(prev);
+                  newSet.delete(program.id);
+                  return newSet;
+                });
+                if (activeProgram === program.id) {
+                  setActiveProgram(null);
+                }
+              }}
               isActive={activeProgram === program.id}
               onClick={() => setActiveProgram(program.id)}
-              isMinimized={isMinimized}
-              setIsMinimized={setIsMinimized}
+              isMinimized={minimizedPrograms.has(program.id)}
+              setIsMinimized={(minimized) => {
+                if (minimized) {
+                  handleMinimize(program.id);
+                } else {
+                  setMinimizedPrograms((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(program.id);
+                    return newSet;
+                  });
+                  setActiveProgram(program.id);
+                }
+              }}
               setActiveProgram={setActiveProgram}
             />
           ))}
+
           <div className="fixed bottom-0 left-0 right-0 h-12 bg-gray-800 flex items-center px-4">
             <button
               onClick={() => setIsLoggedIn(false)}
@@ -110,6 +145,7 @@ export default function Home() {
             >
               Logout
             </button>
+
             <div className="flex-1 flex items-center justify-center space-x-2">
               {programs.map((program) => (
                 <button
